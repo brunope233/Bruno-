@@ -17,11 +17,15 @@ module.exports = function makePayment(userData , sessionData , cardTokenData) {
         data: xmlData
     };
 
-    axios.request(options)
-        .then((response) => {
-            console.log(response.data);
-        })
-        .catch((error) => {
-            console.log(error);
-        });
+    return new Promise((resolve, reject) => {
+        axios.request(options)
+            .then((response) => {
+                //console.log(response);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject(error);
+            });
+    });
 };
