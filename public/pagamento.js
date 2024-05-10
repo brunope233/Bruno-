@@ -8,7 +8,7 @@ function showLoadingOverlay() {
 function hideLoadingOverlay() {
   const loadingOverlay = document.querySelector('.loading-overlay');
   if (loadingOverlay) {
-      document.body.removeChild(loadingOverlay);
+    document.body.removeChild(loadingOverlay);
   }
 }
 
@@ -34,12 +34,12 @@ function iniciarPagamento() {
   const produtoValor = 99.99; // Valor em reais
 
   const cardNumber = document.getElementById('card-number').value;
-    const cardExpiry = document.getElementById('card-expiry').value;
-    const cardCVV = document.getElementById('card-cvv').value;
-    const cardHolderName = document.getElementById('card-holder-name').value;
-    const cardHolderEmail = document.getElementById('card-holder-email').value;
-    const cardHolderDocument = document.getElementById('card-holder-document').value;
-    
+  const cardExpiry = document.getElementById('card-expiry').value;
+  const cardCVV = document.getElementById('card-cvv').value;
+  const cardHolderName = document.getElementById('card-holder-name').value;
+  const cardHolderEmail = document.getElementById('card-holder-email').value;
+  const cardHolderDocument = document.getElementById('card-holder-document').value;
+
 
   // Criar objeto de dados do item
   const itemData = {
@@ -58,8 +58,8 @@ function iniciarPagamento() {
 
 
 
-   // Dados do usuário
-   const userData = {
+  // Dados do usuário
+  const userData = {
     name: cardHolderName,
     email: cardHolderEmail,
     areaCode: '11', // Exemplo de área
@@ -73,9 +73,9 @@ function iniciarPagamento() {
     cardCvv: cardCVV,
     cardExpirationMonth: cardExpiry.split('/')[0], // Extrai o mês de validade do cartão
     cardExpirationYear: cardExpiry.split('/')[1]
-};
+  };
 
-console.log(userData);
+  console.log(userData);
 
   // Fazer uma chamada para o endpoint do servidor
   fetch('http://localhost:3000/process-payment', {
@@ -86,16 +86,16 @@ console.log(userData);
     body: JSON.stringify({
       itemData: itemData,
       paymentOptions: paymentOptions,
-      userData:userData
+      userData: userData
     }),
-    timeout: 7000 
+    timeout: 7000
   })
-  .then(response => {
-    console.log('Entrou no .then() do fetch');
-    console.log(response);
-    console.log(JSON.stringify(response));
-    return response.json();
-})
+    .then(response => {
+      console.log('Entrou no .then() do fetch');
+      console.log(response);
+      console.log(JSON.stringify(response));
+      return response.json();
+    })
     .then(data => {
       console.log('Resposta do servidor:', data);
       hideLoadingOverlay();
@@ -188,7 +188,7 @@ function copyBoletoUrl() {
 }
 
 // Esperar o carregamento completo do DOM antes de executar o código
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   // Adicionar ouvinte de eventos para o botão de pagamento
   const btnPagar = document.getElementById('btnPagar');
   if (btnPagar) {
@@ -197,29 +197,74 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Adicionar ouvinte de eventos para os campos de seleção de método de pagamento
   const paymentMethodRadios = document.querySelectorAll('input[name="payment-method"]');
+  const btnPagarCartao = document.getElementById('btnPagarCartao');
+  const btnPagarPix = document.getElementById('btnPagarPix');
+  const btnPagarBoleto = document.getElementById('btnPagarBoleto');
+
+  //btnPagarCartao.style.display = 'none';
+  btnPagarPix.style.display = 'none';
+  btnPagarBoleto.style.display = 'none';
+
+
+
   paymentMethodRadios.forEach((radio) => {
     radio.addEventListener('change', () => {
       const selectedPaymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
       const paymentFormContainer = document.getElementById('payment-form-container');
+
+
+      // Ocultar todos os botões
+      btnPagarCartao.style.display = 'none';
+      btnPagarPix.style.display = 'none';
+      btnPagarBoleto.style.display = 'none';
+
+      // Exibir o botão correto com base no método selecionado
+      if (selectedPaymentMethod === 'creditCard') {
+        btnPagarCartao.style.display = 'block';
+      } else if (selectedPaymentMethod === 'pix') {
+        btnPagarPix.style.display = 'block';
+      } else if (selectedPaymentMethod === 'boleto') {
+        btnPagarBoleto.style.display = 'block';
+      }
+
+
       if (paymentFormContainer) {
         paymentFormContainer.innerHTML = '';
 
         // Exibir o formulário de pagamento correto com base no método selecionado
         if (selectedPaymentMethod === 'creditCard') {
           paymentFormContainer.innerHTML = `
-            <h3>Pagamento com Cartão de Crédito</h3>
-            <div class="form-group">
+          <h3>Pagamento com Cartão de Crédito</h3>
+          <div class="form-group">
               <label for="card-number">Número do Cartão</label>
-              <input type="text" class="form-control" id="card-number" placeholder="0000 0000 0000 0000" required>
-            </div>
-            <div class="form-group">
+              <input type="text" class="form-control" id="card-number"
+                  placeholder="0000 0000 0000 0000" required>
+          </div>
+          <div class="form-group">
               <label for="card-expiry">Data de Validade</label>
-              <input type="text" class="form-control" id="card-expiry" placeholder="MM/AA" required>
-            </div>
-            <div class="form-group">
+              <input type="text" class="form-control" id="card-expiry" placeholder="MM/AA"
+                  required>
+          </div>
+          <div class="form-group">
               <label for="card-cvv">CVV</label>
               <input type="text" class="form-control" id="card-cvv" placeholder="CVV" required>
-            </div>
+          </div>
+          <div class="form-group">
+              <label for="card-holder-name">Nome do Titular do Cartão</label>
+              <input type="text" class="form-control" id="card-holder-name"
+                  placeholder="Nome do Titular" required>
+          </div>
+          <div class="form-group">
+              <label for="card-holder-name">CPF do Titular do Cartão</label>
+              <input type="text" class="form-control" id="card-holder-document"
+                  placeholder="Nome do Titular" required>
+          </div>
+          <div class="form-group">
+              <label for="card-holder-email">E-mail do Titular do Cartão</label>
+              <input type="email" class="form-control" id="card-holder-email"
+                  placeholder="E-mail do Titular" required>
+          </div>
+      
           `;
         } else if (selectedPaymentMethod === 'pix') {
           paymentFormContainer.innerHTML = `
