@@ -1,5 +1,34 @@
+function showLoadingOverlay() {
+  const loadingOverlay = document.createElement('div');
+  loadingOverlay.classList.add('loading-overlay');
+  document.body.appendChild(loadingOverlay);
+}
+
+// Função para esconder overlay de loading
+function hideLoadingOverlay() {
+  const loadingOverlay = document.querySelector('.loading-overlay');
+  if (loadingOverlay) {
+      document.body.removeChild(loadingOverlay);
+  }
+}
+
+// Função para atualizar o corpo do modal com o retorno do servidor
+function updateModalBody(data) {
+  const modalBody = document.getElementById('body-modal-pagamento');
+  modalBody.innerHTML = ''; // Limpa o conteúdo atual do corpo do modal
+
+  // Adiciona o conteúdo do retorno do servidor ao corpo do modal
+  const responseContent = document.createElement('div');
+  responseContent.innerHTML = data; // Supondo que o retorno do servidor seja HTML
+  modalBody.appendChild(responseContent);
+}
+
+
+
+
 // Função para iniciar o processo de pagamento
 function iniciarPagamento() {
+  showLoadingOverlay();
   // Obter informações do produto ou serviço
   const produtoDescricao = 'Curso Online: Perda de Peso Após a Menopausa';
   const produtoValor = 99.99; // Valor em reais
@@ -58,12 +87,20 @@ console.log(userData);
       itemData: itemData,
       paymentOptions: paymentOptions,
       userData:userData
-    })
+    }),
+    timeout: 7000 
   })
-    .then(response => response.json())
+  .then(response => {
+    console.log('Entrou no .then() do fetch');
+    console.log(response);
+    console.log(JSON.stringify(response));
+    return response.json();
+})
     .then(data => {
       console.log('Resposta do servidor:', data);
-      alert(data);
+      hideLoadingOverlay();
+      updateModalBody(data);
+      alert(JSON.stringify(data));
 
       if (data.success) {
         // Pagamento processado com sucesso
@@ -91,12 +128,14 @@ console.log(userData);
         document.getElementById('card-expiry').value = '';
         document.getElementById('card-cvv').value = '';
       } else {
+        hideLoadingOverlay();
         // Ocorreu um erro no processamento do pagamento
         exibirMensagemDeErro('Ocorreu um erro ao processar o pagamento. Por favor, tente novamente mais tarde.');
       }
     })
     .catch(error => {
-      // console.error('Erro na requisição:', error);
+      hideLoadingOverlay();
+      console.error('Erro na requisição:', JSON.stringify(error));
       exibirMensagemDeErro('Ocorreu um erro na requisição. Por favor, tente novamente mais tarde.');
     });
 }
