@@ -4,6 +4,14 @@ function iniciarPagamento() {
   const produtoDescricao = 'Curso Online: Perda de Peso Após a Menopausa';
   const produtoValor = 99.99; // Valor em reais
 
+  const cardNumber = document.getElementById('card-number').value;
+    const cardExpiry = document.getElementById('card-expiry').value;
+    const cardCVV = document.getElementById('card-cvv').value;
+    const cardHolderName = document.getElementById('card-holder-name').value;
+    const cardHolderEmail = document.getElementById('card-holder-email').value;
+    const cardHolderDocument = document.getElementById('card-holder-document').value;
+    
+
   // Criar objeto de dados do item
   const itemData = {
     itemId: '0001',
@@ -19,6 +27,27 @@ function iniciarPagamento() {
     receiverEmail: 'brunodlm9@gmail.com'
   };
 
+
+
+   // Dados do usuário
+   const userData = {
+    name: cardHolderName,
+    email: cardHolderEmail,
+    areaCode: '11', // Exemplo de área
+    phoneNumber: '994458797', // Exemplo de número de telefone
+    cpf: cardHolderDocument, // Exemplo de CPF
+    birthDate: '20/10/1980', // Exemplo de data de nascimento
+    cardHolderName: cardHolderName,
+    cardCPF: '22580163808', // Exemplo de CPF do titular do cartão
+    cardNumber: cardNumber,
+    cardBrand: 'MASTERCARD', // Aqui você pode definir a bandeira do cartão, se souber
+    cardCvv: cardCVV,
+    cardExpirationMonth: cardExpiry.split('/')[0], // Extrai o mês de validade do cartão
+    cardExpirationYear: cardExpiry.split('/')[1]
+};
+
+console.log(userData);
+
   // Fazer uma chamada para o endpoint do servidor
   fetch('http://localhost:3000/process-payment', {
     method: 'POST',
@@ -27,12 +56,14 @@ function iniciarPagamento() {
     },
     body: JSON.stringify({
       itemData: itemData,
-      paymentOptions: paymentOptions
+      paymentOptions: paymentOptions,
+      userData:userData
     })
   })
     .then(response => response.json())
     .then(data => {
       console.log('Resposta do servidor:', data);
+      alert(data);
 
       if (data.success) {
         // Pagamento processado com sucesso
@@ -65,7 +96,7 @@ function iniciarPagamento() {
       }
     })
     .catch(error => {
-      console.error('Erro na requisição:', error);
+      // console.error('Erro na requisição:', error);
       exibirMensagemDeErro('Ocorreu um erro na requisição. Por favor, tente novamente mais tarde.');
     });
 }
