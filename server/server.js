@@ -2,6 +2,11 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
+const xml2js = require('xml2js');
+
+const makePayment = require('./paymentRequest');
+const makeSession = require('./sessionRequest');
+const cardTokenRequest = require('./cardTokenRequest');
 
 const app = express();
 
@@ -20,69 +25,67 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint para processar o pagamento
-app.post('/process-payment', (req, res) => {
-  const { itemData, paymentOptions } = req.body;
+app.post('/process-payment', async (req, res) => {
+  const { itemData, paymentOptions, userData } = req.body;
 
-  // Configuração do PagSeguro
-  const emailPagSeguro = 'brunodlm9@gmail.com';
-  const tokenPagSeguro = 'A7401550F74A4E2D97F3F84B128572C6';
+  if (paymentOptions.paymentMethod === 'creditCard') {
+    //console.log(userData);
 
-  // Fazer a requisição para a API do PagSeguro usando o axios
-  axios.post('https://sandbox.pagseguro.uol.com.br/checkout/v2/', {
-    email: emailPagSeguro,
-    token: tokenPagSeguro,
-    currency: 'BRL',
-    itemId1: itemData.itemId,
-    itemDescription1: itemData.itemDescription,
-    itemAmount1: itemData.itemAmount,
-    itemQuantity1: itemData.itemQuantity,
-    paymentMethod: paymentOptions.paymentMethod,
-    receiverEmail: paymentOptions.receiverEmail
-  }, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-    }
-  })
-    .then(response => {
-      const { data } = response;
-      console.log('Resposta da API do PagSeguro:', data);
+    try {
+      // Obter a sessão antes de fazer o pagamento
+      const sessionData = await makeSession();
+      console.log("Dados da sessao");
+      console.log(sessionData);
+      console.log("===============");
 
-      let paymentDetails = {
-        success: false,
-        paymentMethod: paymentOptions.paymentMethod
-      };
+      const cardTokenData = await cardTokenRequest(sessionData, userData)
+      console.log("Dados do Cartão");
+      console.log(cardTokenData);
+      console.log("===============");
 
-      // Verificar o método de pagamento selecionado
-      if (paymentOptions.paymentMethod === 'creditCard') {
-        // Processar pagamento com cartão de crédito
-        const creditCardData = {
-          // Dados do cartão de crédito
-          // ...
-        };
-        // Lógica para processar o pagamento com cartão de crédito
-        // ...
-        paymentDetails.success = true;
-      } else if (paymentOptions.paymentMethod === 'pix') {
-        // Extrair o código Pix da resposta da API do PagSeguro
-        const pixCode = data.code;
-        console.log('Código Pix:', pixCode);
-        paymentDetails.success = true;
-        paymentDetails.pixCode = pixCode;
-      } else if (paymentOptions.paymentMethod === 'boleto') {
-        // Extrair a URL do boleto da resposta da API do PagSeguro
-        const boletoUrl = data.paymentLink;
-        console.log('URL do Boleto:', boletoUrl);
-        paymentDetails.success = true;
-        paymentDetails.boletoUrl = boletoUrl;
-      }
+      // Fazer o pagamento
+      const paymentResponse = await makePayment(userData, sessionData, cardTokenData);
+      const processXMLData = (xmlData) => {
+        // Use o xml2js para analisar a resposta XML
+        const parser = new xml2js.Parser({ explicitArray: false });
+        
+        // Analise a resposta XML e processe os dados após a conclusão
+        parser.parseString(xmlData, (err, result) => {
+            if (err) {
+                console.error('Erro ao analisar XML:', err);
+            } else {
+                // Extraia os campos relevantes do resultado
+                const code = result.transaction.code;
+                const reference = result.transaction.reference;
+    
+                // Exiba os dados
+                console.log('Dados da compra:');
+                console.log('Código:', code);
+                console.log('Referência:', reference);
+    
+                // Salve os dados no localStorage, se necessário
+                // const transactionList = JSON.parse(localStorage.getItem('transactions')) || [];
+                // transactionList.push({ code, reference });
+                // localStorage.setItem('transactions', JSON.stringify(transactionList));
+            }
+        });
+    };
+    
 
-      // Enviar os detalhes do pagamento de volta para o cliente
-      res.json(paymentDetails);
-    })
-    .catch(error => {
-      console.error('Erro na requisição para a API do PagSeguro:', error);
+    if (typeof paymentResponse === 'string') {
+      console.log(paymentResponse);
+      processXMLData(paymentResponse);
+  } else {
+      console.error('A respostaXML não é uma string:', paymentResponse);
+  }
+
+
+      res.json(paymentResponse);
+    } catch (error) {
+      console.error('Erro ao processar o pagamento:', error);
       res.status(500).json({ success: false, error: 'Ocorreu um erro no processamento do pagamento.' });
-    });
+    }
+  }
 });
 
 // Endpoint para receber notificações de pagamento do PagSeguro
