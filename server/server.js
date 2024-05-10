@@ -28,7 +28,7 @@ app.post('/process-payment', (req, res) => {
   const tokenPagSeguro = 'A7401550F74A4E2D97F3F84B128572C6';
 
   // Fazer a requisição para a API do PagSeguro usando o axios
-  axios.post('https://ws.pagseguro.uol.com.br/v2/checkout', {
+  axios.post('https://sandbox.pagseguro.uol.com.br/checkout/v2/', {
     email: emailPagSeguro,
     token: tokenPagSeguro,
     currency: 'BRL',
