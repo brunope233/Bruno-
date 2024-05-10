@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contato</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html">Início</a>
+            <a href="modulos.html">Módulos</a>
+            <a href="contato.html">Contato</a>
+            <a href="#" id="loginBtn">Login</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h1 class="text-center my-5">Fale Conosco</h1>
+
+        <section class="contact-info">
+            <div>
+                <h2>Endereço</h2>
+                <p>Rua Exemplo, 123</p>
+                <p>Cidade, Estado</p>
+                <p>CEP 12345-678</p>
+            </div>
+
+            <div>
+                <h2>Telefone</h2>
+                <p>(11) 1234-5678</p>
+            </div>
+
+            <div>
+                <h2>Email</h2>
+                <p>contato@cursoposmenopausa.com.br</p>
+            </div>
+        </section>
+
+        <section class="contact-form">
+            <h2>Envie sua Mensagem</h2>
+            <form>
+                <div>
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+
+                <div>
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div>
+                    <label for="mensagem">Mensagem:</label>
+                    <textarea id="mensagem" name="mensagem" rows="5" required></textarea>
+                </div>
+
+                <button type="submit">Enviar Mensagem</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Transformação Após os 40. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="autenticacao.js"></script>
+</body>
+</html>

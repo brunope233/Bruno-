@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulos do Curso</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <header>
+        <nav>
+            <a href="index.html">Início</a>
+            <a href="modulos.html">Módulos</a>
+            <a href="contato.html">Contato</a>
+            <a href="#" id="loginBtn">Login</a>
+        </nav>
+    </header>
+
+    <main class="container py-5">
+        <h1 class="text-center mb-4">Módulos do Curso</h1>
+
+        <!-- Mensagem de acesso restrito -->
+        <div id="accessMessage" class="alert alert-info" style="display: none;">
+            Você precisa ter acesso pago ao curso para visualizar os módulos.
+            <a href="pagamento.html" class="alert-link">Adquira o acesso agora!</a>
+        </div>
+
+        <!-- Abas ou Painéis Expansíveis para Cada Módulo -->
+        <div class="module-tabs">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#modulo1" role="tab" aria-controls="modulo1" aria-selected="true">Módulo 1</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#modulo2" role="tab" aria-controls="modulo2" aria-selected="false">Módulo 2</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#modulo3" role="tab" aria-controls="modulo3" aria-selected="false">Módulo 3</a>
+                </li>
+                <!-- Adicione mais abas conforme necessário -->
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="modulo1" role="tabpanel" aria-labelledby="modulo1-tab">
+                    <!-- Conteúdo do Módulo 1 -->
+                    <h2 class="mt-4">Módulo 1: Introdução</h2>
+                    <div class="module-content">
+                        <!-- Conteúdo do Módulo 1 aqui -->
+                        <!-- Exemplo de conteúdo -->
+                        <h3>Desafios de Perder Peso na Menopausa</h3>
+                        <p>A menopausa representa uma grande transição na vida de uma mulher, trazendo diversas mudanças físicas e hormonais. Uma das maiores dificuldades enfrentadas nesta fase é o aumento indesejado de peso e a luta para manter um corpo saudável e em forma.</p>
+                        <!-- Restante do conteúdo do Módulo 1 -->
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="modulo2" role="tabpanel" aria-labelledby="modulo2-tab">
+                    <!-- Conteúdo do Módulo 2 -->
+                    <h2 class="mt-4">Módulo 2: Nutrição</h2>
+                    <div class="module-content">
+                        <!-- Conteúdo do Módulo 2 aqui -->
+                        <!-- Exemplo de conteúdo -->
+                        <h3>Calculando necessidade calórica para perda de peso saudável</h3>
+                        <p>O primeiro passo é determinar sua Taxa Metabólica Basal (TMB), que é a quantidade de calorias que seu corpo queima em repouso, apenas para manter as funções vitais básicas. Existem fórmulas e calculadoras on-line que podem estimar sua TMB com base em fatores como idade, peso, altura e nível de atividade física.</p>
+                        <!-- Restante do conteúdo do Módulo 2 -->
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="modulo3" role="tabpanel" aria-labelledby="modulo3-tab">
+                    <!-- Conteúdo do Módulo 3 -->
+                    <h2 class="mt-4">Módulo 3: Exercícios</h2>
+                    <div class="module-content">
+                        <!-- Conteúdo do Módulo 3 aqui -->
+                        <!-- Exemplo de conteúdo -->
+                        <h3>Benefícios do exercício na menopausa</h3>
+                        <p>Praticar exercícios regularmente traz inúmeros benefícios para mulheres na menopausa, contribuindo diretamente para uma perda de peso saudável e uma melhor qualidade de vida nessa fase. Veja alguns dos principais benefícios:</p>
+                        <!-- Restante do conteúdo do Módulo 3 -->
+                    </div>
+                </div>
+                <!-- Adicione mais painéis de conteúdo conforme necessário -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer>
+        <div class="container">
+            <div class="footer-left">
+                <p>&copy; 2023 Transformação Após os 40. Todos os direitos reservados.</p>
+            </div>
+            <div class="footer-right">
+                <ul>
+                    <li><a href="#">Política de Privacidade</a></li>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Contato</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+    <script src="autenticacao.js"></script>
+
+    <script>
+        // Verificar autenticação do usuário e exibir/ocultar o conteúdo dos módulos
+        document.addEventListener('DOMContentLoaded', function() {
+            const accessMessage = document.getElementById('accessMessage');
+            const moduleContent = document.querySelectorAll('.module-content');
+
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    // Verificar se o usuário tem acesso pago ao curso
+                    const userRef = firebase.database().ref('users/' + user.uid);
+                    userRef.once('value')
+                        .then((snapshot) => {
+                            const userData = snapshot.val();
+                            if (userData && userData.acessoPago) {
+                                // Usuário tem acesso pago ao curso, exibir conteúdo dos módulos
+                                accessMessage.style.display = 'none';
+                                moduleContent.forEach(content => {
+                                    content.style.display = 'block';
+                                });
+                            } else {
+                                // Usuário não tem acesso pago ao curso, exibir mensagem de acesso restrito
+                                accessMessage.style.display = 'block';
+                                moduleContent.forEach(content => {
+                                    content.style.display = 'none';
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Erro ao verificar acesso pago do usuário:', error);
+                        });
+                } else {
+                    // Usuário não autenticado, exibir mensagem de acesso restrito
+                    accessMessage.style.display = 'block';
+                    moduleContent.forEach(content => {
+                        content.style.display = 'none';
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
