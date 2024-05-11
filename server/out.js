@@ -1,0 +1,483 @@
+const axios = require('axios');
+const qs = require('qs');
+const config = require('./config');
+
+module.exports = function cardTokenRequest(sessionId, userData) {
+    const data = qs.stringify({
+        'sessionId': sessionId,
+        'amount':100,
+        'cardNumber': userData.cardNumber,
+        'cardBrand': userData.cardBrand,
+        'cardCvv': userData.cardCvv,
+        'cardExpirationMonth': userData.cardExpirationMonth,
+        'cardExpirationYear': userData.cardExpirationYear
+    });
+
+    console.log(data);
+    console.log(userData);
+    
+
+    const requestConfig = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'https://df.uol.com.br/v2/cards',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        data: data
+    };
+
+    return new Promise((resolve, reject) => {
+        axios.request(requestConfig)
+            .then((response) => {
+                //console.log(response);
+                resolve(response.data.token);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject(error);
+            });
+    });
+};
+// config.js
+module.exports = {
+    apiUrl: 'https://ws.sandbox.pagseguro.uol.com.br/v2/',
+    email: 'brunodlm9@gmail.com',
+    token: 'A7401550F74A4E2D97F3F84B128572C6'
+};
+
+
+
+// paymentRequest.js
+const axios = require('axios');
+const createPaymentXML = require('./paymentXML');
+const config = require('./config');
+
+module.exports = function makePayment(userData , sessionData , cardTokenData) {
+    const xmlData = createPaymentXML(userData , sessionData , cardTokenData);
+    const apiUrl = `${config.apiUrl}/transactions?email=${config.email}&token=${config.token}`;
+    const headers = {
+        'Content-Type': 'application/xml'
+    };
+    const options = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: apiUrl,
+        headers: headers,
+        data: xmlData
+    };
+
+    return new Promise((resolve, reject) => {
+        axios.request(options)
+            .then((response) => {
+                //console.log(response);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject(error);
+            });
+    });
+};
+// paymentXML.js
+module.exports = function createPaymentXML(userData , sessionData , cardTokenData) {
+    const { name, email, areaCode, phoneNumber, cpf, birthDate, cardHolderName, cardCPF } = userData;
+
+    const xmlData = `
+        <payment>
+            <mode>default</mode>
+            <method>creditCard</method>
+            <sender>
+                <name>${name}</name>
+                <email>${email}</email>
+                <phone>
+                    <areaCode>${areaCode}</areaCode>
+                    <number>${phoneNumber}</number>
+                </phone>
+                <documents>
+                    <document>
+                        <type>CPF</type>
+                        <value>${cpf}</value>
+                    </document>
+                </documents>
+            </sender>
+            <currency>BRL</currency>
+            <notificationURL>https://webhook.site/78c82ba0-64bc-4eca-9c6e-8b1f938323bd</notificationURL>
+            <items>
+                <item>
+                    <id>1</id>
+                    <description>Notebook Prata</description>
+                    <quantity>1</quantity>
+                    <amount>1.00</amount>
+                </item>
+            </items>
+            <extraAmount>0.00</extraAmount>
+            <reference>R123478</reference>
+            <shipping>
+                <addressRequired>false</addressRequired>
+            </shipping>
+            <creditCard>
+                <token>${cardTokenData}</token>
+                <installment>
+                    <noInterestInstallmentQuantity>3</noInterestInstallmentQuantity>
+                     <quantity>1</quantity>
+                    <value>1.00</value>
+                </installment>
+                <holder>
+                    <name>${cardHolderName}</name>
+                    <documents>
+                        <document>
+                            <type>CPF</type>
+                            <value>${cardCPF}</value>
+                        </document>
+                    </documents>
+                    <birthDate>${birthDate}</birthDate>
+                    <phone>
+                        <areaCode>${areaCode}</areaCode>
+                        <number>${phoneNumber}</number>
+                    </phone>
+                </holder>
+                <billingAddress>
+                    <street>Av. Brigadeiro Faria Lima</street>
+                    <number>1384</number>
+                    <complement>1 andar</complement>
+                    <district>Jardim Paulistano</district>
+                    <city>Sao Paulo</city>
+                    <state>SP</state>
+                    <country>BRA</country>
+                    <postalCode>01452002</postalCode>
+                </billingAddress>
+            </creditCard>
+        </payment>
+    `;
+
+    return xmlData;
+};
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+const path = require('path');
+const xml2js = require('xml2js');
+
+const makePayment = require('./paymentRequest');
+const makeSession = require('./sessionRequest');
+const cardTokenRequest = require('./cardTokenRequest');
+
+const makeSlip = require('./slipRequest');
+
+const app = express();
+
+// Middleware para analisar o corpo das requisições como JSON
+app.use(express.json());
+
+// Middleware para permitir solicitações CORS
+app.use(cors());
+
+// Middleware para servir arquivos estáticos da pasta "public"
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Rota para a página inicial
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// Endpoint para processar o pagamento
+app.post('/process-payment', async (req, res) => {
+  const { itemData, paymentOptions, userData } = req.body;
+
+  if (paymentOptions.paymentMethod === 'creditCard') {
+    //console.log(userData);
+
+    try {
+      // Obter a sessão antes de fazer o pagamento
+      const sessionData = await makeSession();
+      console.log("Dados da sessao");
+      console.log(sessionData);
+      console.log("===============");
+
+      const cardTokenData = await cardTokenRequest(sessionData, userData)
+      console.log("Dados do Cartão");
+      console.log(cardTokenData);
+      console.log("===============");
+
+      // Fazer o pagamento
+      const paymentResponse = await makePayment(userData, sessionData, cardTokenData);
+      const processXMLData = (xmlData) => {
+        // Use o xml2js para analisar a resposta XML
+        const parser = new xml2js.Parser({ explicitArray: false });
+        
+        // Analise a resposta XML e processe os dados após a conclusão
+        parser.parseString(xmlData, (err, result) => {
+            if (err) {
+                console.error('Erro ao analisar XML:', err);
+            } else {
+                // Extraia os campos relevantes do resultado
+                const code = result.transaction.code;
+                const reference = result.transaction.reference;
+    
+                // Exiba os dados
+                console.log('Dados da compra:');
+                console.log('Código:', code);
+                console.log('Referência:', reference);
+    
+                // Salve os dados no localStorage, se necessário
+                const transactionList = JSON.parse(localStorage.getItem('transactions')) || [];
+                transactionList.push({ code, reference });
+                localStorage.setItem('transactions', JSON.stringify(transactionList));
+            }
+        });
+    };
+    
+
+    if (typeof paymentResponse === 'string') {
+      console.log(paymentResponse);
+      processXMLData(paymentResponse);
+  } else {
+      console.error('A respostaXML não é uma string:', paymentResponse);
+  }
+
+
+      res.json(paymentResponse);
+    } catch (error) {
+      console.error('Erro ao processar o pagamento:', error);
+      res.status(500).json({ success: false, error: 'Ocorreu um erro no processamento do pagamento.' });
+    }
+  }
+});
+
+
+
+app.post('/process-payment-pix', async (req, res) => {
+  const { itemData, paymentOptions } = req.body;
+
+  if (paymentOptions.paymentMethod === 'pix') {
+    //console.log(userData);
+    console.log("pagando com pix");
+    const sessionData = await makeSession();
+    console.log("Dados da sessao");
+    console.log(sessionData);
+    console.log("===============");
+
+    const cardTokenData = await cardTokenRequest(sessionData, userData)
+    console.log("Dados do Cartão");
+    console.log(cardTokenData);
+    console.log("===============");
+
+    // Fazer o pagamento
+    //const paymentResponse = await makePayment(userData, sessionData, cardTokenData);
+  }
+});
+
+
+app.post('/process-payment-boleto', async (req, res) => {
+  const { itemData, paymentOptions, userData } = req.body;
+  console.log("pagando com boleto backend");
+
+    //console.log(userData);
+    console.log("pagando com boleto");
+    console.log("Dados da sessao");
+    // const sessionData = await makeSession();
+   
+    // console.log(sessionData);
+    // console.log("===============");
+
+    // const cardTokenData = await cardTokenRequest(sessionData, userData)
+    // console.log("Dados do Cartão");
+    // console.log(cardTokenData);
+    // console.log("===============");
+
+    // Fazer o pagamento
+    console.log("===============Fazer o Boleto");
+    const paymentResponse = await makeSlip(userData);
+    console.log(paymentResponse);
+});
+
+// Endpoint para receber notificações de pagamento do PagSeguro
+app.post('/notification', (req, res) => {
+  const notificationCode = req.body.notificationCode;
+
+  // Verificar a autenticidade da notificação (exemplo de código)
+  const isNotificationAuthentic = verifyNotificationAuthenticity(notificationCode);
+
+  if (!isNotificationAuthentic) {
+    console.log('Notificação inválida recebida.');
+    res.status(400).end();
+    return;
+  }
+
+  // Consultar a API do PagSeguro para obter os detalhes da transação
+  axios.get(`https://ws.pagseguro.uol.com.br/v3/transactions/notifications/${notificationCode}`, {
+    params: {
+      email: emailPagSeguro,
+      token: tokenPagSeguro
+    }
+  })
+    .then(response => {
+      const transactionData = response.data;
+      const transactionStatus = transactionData.status;
+
+      // Atualizar o status do pagamento no banco de dados
+      updatePaymentStatus(transactionData.reference, transactionStatus);
+
+      // Verificar o status da transação e realizar ações adicionais, se necessário
+      if (transactionStatus === '3') {
+        // Pagamento aprovado
+        console.log('Pagamento aprovado. Liberar acesso ao conteúdo.');
+        // Lógica para liberar o acesso ao conteúdo para o usuário
+        // ...
+      } else if (transactionStatus === '7') {
+        // Pagamento cancelado
+        console.log('Pagamento cancelado. Revogar acesso ao conteúdo.');
+        // Lógica para revogar o acesso ao conteúdo do usuário
+        // ...
+      }
+
+      res.status(200).end();
+    })
+    .catch(error => {
+      console.error('Erro ao consultar a API do PagSeguro para obter detalhes da transação:', error);
+      res.status(500).end();
+    });
+});
+
+// Função para verificar a autenticidade da notificação (exemplo de código)
+function verifyNotificationAuthenticity(notificationCode) {
+  // Lógica para verificar a autenticidade da notificação recebida do PagSeguro
+  // Consulte a documentação do PagSeguro para obter mais informações sobre como fazer essa verificação
+  // ...
+
+  // Retorne true se a notificação for autêntica, ou false caso contrário
+  return true;
+}
+
+// Função para atualizar o status do pagamento no banco de dados (exemplo de código)
+function updatePaymentStatus(reference, status) {
+  // Lógica para atualizar o status do pagamento no banco de dados com base na referência e no status recebidos
+  // ...
+}
+
+// Iniciar o servidor
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});const axios = require('axios');
+const config = require('./config');
+const xml2js = require('xml2js');
+
+module.exports = function makeSession() {
+    const apiUrl = `${config.apiUrl}sessions?email=${config.email}&token=${config.token}`;
+    
+    const headers = {
+        'Content-Type': 'application/xml'
+    };
+    const data = `email=${config.email}&token=${config.token}`;
+
+    const options = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: apiUrl,
+        headers: headers,
+        data: data
+    };
+    console.log("vai criar sessao com " + apiUrl);
+    // Retorne uma promessa para obter os dados da sessão
+    return new Promise((resolve, reject) => {
+        
+        axios.request(options)
+            .then((response) => {
+                // Converter o XML para JSON
+                console.log("Retorno da sessao");
+                console.log(response);
+                xml2js.parseString(response.data, (err, result) => {
+                    if (err) {
+                        console.log("reject");
+                        reject(err);
+                    } else {
+                        // Extrair o ID da sessão do JSON
+                        console.log("extraindo a sessao");
+                        const sessionId = result.session.id[0];
+                        resolve(sessionId);
+                    }
+                });
+            })
+            .catch((error) => {
+                console.log("erro");
+                console.log(error);
+                reject(error);
+            });
+    });
+};// slipRequest.js
+const axios = require('axios');
+const createSlipXML = require('./slipXML');
+const config = require('./config');
+
+module.exports = function makeSlip(userData) {
+    const xmlData = createSlipXML(userData );
+    const apiUrl = `${config.apiUrl}/transactions?email=${config.email}&token=${config.token}`;
+    const headers = {
+        'Content-Type': 'application/xml'
+    };
+    const options = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: apiUrl,
+        headers: headers,
+        data: xmlData
+    };
+
+    console.log("vamos tentar criar um boleto")
+    return new Promise((resolve, reject) => {
+        axios.request(options)
+            .then((response) => {
+                console.log(response);
+                resolve(response.data);
+            })
+            .catch((error) => {
+                console.log(error);
+                reject(error);
+            });
+    });
+};
+// paymentXML.js
+module.exports = function createSlipXML(userData ) {
+    const { name, email, areaCode, phoneNumber, cpf, birthDate, cardHolderName, cardCPF } = userData;
+
+    const xmlData = `
+        <payment>
+            <mode>default</mode>
+            <method>creditCard</method>
+            <sender>
+                <name>${name}</name>
+                <email>${email}</email>
+                <phone>
+                    <areaCode>${areaCode}</areaCode>
+                    <number>${phoneNumber}</number>
+                </phone>
+                <documents>
+                    <document>
+                        <type>CPF</type>
+                        <value>${cpf}</value>
+                    </document>
+                </documents>
+            </sender>
+            <currency>BRL</currency>
+            <notificationURL>https://webhook.site/78c82ba0-64bc-4eca-9c6e-8b1f938323bd</notificationURL>
+            <items>
+                <item>
+                    <id>1</id>
+                    <description>Notebook Prata</description>
+                    <quantity>1</quantity>
+                    <amount>1.00</amount>
+                </item>
+            </items>
+            <extraAmount>0.00</extraAmount>
+            <reference>R123478</reference>
+            <shipping>
+                <addressRequired>false</addressRequired>
+            </shipping>
+            
+        </payment>
+    `;
+
+    return xmlData;
+};

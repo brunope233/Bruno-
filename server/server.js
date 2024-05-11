@@ -8,6 +8,8 @@ const makePayment = require('./paymentRequest');
 const makeSession = require('./sessionRequest');
 const cardTokenRequest = require('./cardTokenRequest');
 
+const makeBoletoPayment = require('./slipRequest');
+
 const app = express();
 
 // Middleware para analisar o corpo das requisições como JSON
@@ -64,9 +66,9 @@ app.post('/process-payment', async (req, res) => {
                 console.log('Referência:', reference);
     
                 // Salve os dados no localStorage, se necessário
-                // const transactionList = JSON.parse(localStorage.getItem('transactions')) || [];
-                // transactionList.push({ code, reference });
-                // localStorage.setItem('transactions', JSON.stringify(transactionList));
+                const transactionList = JSON.parse(localStorage.getItem('transactions')) || [];
+                transactionList.push({ code, reference });
+                localStorage.setItem('transactions', JSON.stringify(transactionList));
             }
         });
     };
@@ -86,6 +88,53 @@ app.post('/process-payment', async (req, res) => {
       res.status(500).json({ success: false, error: 'Ocorreu um erro no processamento do pagamento.' });
     }
   }
+});
+
+
+
+app.post('/process-payment-pix', async (req, res) => {
+  const { itemData, paymentOptions } = req.body;
+
+  if (paymentOptions.paymentMethod === 'pix') {
+    //console.log(userData);
+    console.log("pagando com pix");
+    const sessionData = await makeSession();
+    console.log("Dados da sessao");
+    console.log(sessionData);
+    console.log("===============");
+
+    const cardTokenData = await cardTokenRequest(sessionData, userData)
+    console.log("Dados do Cartão");
+    console.log(cardTokenData);
+    console.log("===============");
+
+    // Fazer o pagamento
+    //const paymentResponse = await makePayment(userData, sessionData, cardTokenData);
+  }
+});
+
+
+app.post('/process-payment-boleto', async (req, res) => {
+  const { itemData, paymentOptions, userData } = req.body;
+  console.log("pagando com boleto backend");
+
+    //console.log(userData);
+    console.log("pagando com boleto");
+    console.log("Dados da sessao");
+    // const sessionData = await makeSession();
+   
+    // console.log(sessionData);
+    // console.log("===============");
+
+    // const cardTokenData = await cardTokenRequest(sessionData, userData)
+    // console.log("Dados do Cartão");
+    // console.log(cardTokenData);
+    // console.log("===============");
+
+    // Fazer o pagamento
+    console.log("===============Fazer o Boleto");
+    const paymentResponse = await makeBoletoPayment(userData);
+    console.log(paymentResponse);
 });
 
 // Endpoint para receber notificações de pagamento do PagSeguro
