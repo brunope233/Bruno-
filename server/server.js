@@ -8,7 +8,7 @@ const makePayment = require('./paymentRequest');
 const makeSession = require('./sessionRequest');
 const cardTokenRequest = require('./cardTokenRequest');
 
-const makeBoletoPayment = require('./slipRequest');
+const makeSlip = require('./slipRequest');
 
 const app = express();
 
@@ -119,8 +119,7 @@ app.post('/process-payment-boleto', async (req, res) => {
   console.log("pagando com boleto backend");
 
     //console.log(userData);
-    console.log("pagando com boleto");
-    console.log("Dados da sessao");
+   // console.log("Dados da sessao");
     // const sessionData = await makeSession();
    
     // console.log(sessionData);
@@ -132,9 +131,10 @@ app.post('/process-payment-boleto', async (req, res) => {
     // console.log("===============");
 
     // Fazer o pagamento
+    const paymentResponse = await makeSlip(userData);
     console.log("===============Fazer o Boleto");
-    const paymentResponse = await makeBoletoPayment(userData);
     console.log(paymentResponse);
+    res.json({ paymentLink: paymentResponse }); 
 });
 
 // Endpoint para receber notificações de pagamento do PagSeguro

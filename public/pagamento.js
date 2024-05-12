@@ -260,8 +260,8 @@ function iniciarPagamentoPix() {
 
 
 function iniciarPagamentoBoleto() {
-  
-  showLoadingOverlay();
+  //showLoadingOverlay();
+
   // Obter informações do produto ou serviço
   const produtoDescricao = 'Curso Online: Perda de Peso Após a Menopausa';
   const produtoValor = 99.99; // Valor em reais
@@ -270,7 +270,7 @@ function iniciarPagamentoBoleto() {
   const pixHolderEmail = document.getElementById('pix-holder-email').value;
   const pixHolderDocument = document.getElementById('pix-holder-document').value;
 
-   const userData = {
+  const userData = {
     name: pixHolderName,
     email: pixHolderEmail,
     areaCode: '11', // Exemplo de área
@@ -294,7 +294,6 @@ function iniciarPagamentoBoleto() {
     receiverEmail: 'brunodlm9@gmail.com'
   };
 
-  console.log("pagando com boleto");
   // Fazer uma chamada para o endpoint do servidor
   fetch('http://localhost:3000/process-payment-boleto', {
     method: 'POST',
@@ -308,44 +307,43 @@ function iniciarPagamentoBoleto() {
     })
   })
     .then(response => {
-      console.log('Entrou no .then() do fetch');
-      console.log(response);
-      console.log(JSON.stringify(response));
+      if (!response.ok) {
+        throw new Error('Erro na requisição');
+      }
+      console.log("retorno ok");
       return response.json();
     })
     .then(data => {
-      console.log('Resposta do servidor:', data);
       hideLoadingOverlay();
-      updateModalBody(data);
-      alert(JSON.stringify(data));
+      console.log('Resposta do servidor:', data);
+      
+      document.getElementById('boleto-instructions').style.display = 'block';
+      document.getElementById('boleto-url').value = data.paymentLink;
+      alert("Link do boleto: " + data.paymentLink);
+      const paymentFormContainer = document.getElementById('payment-form-container');
 
-      if (data.success) {
-
-        document.getElementById('boleto-url').value = data.boletoUrl;
-        document.getElementById('payment-instructions').textContent = 'Clique no link abaixo para visualizar e imprimir o boleto:';
-
-        if (paymentStatus) {
-          paymentStatus.textContent = 'Pagamento processado com sucesso!';
-        }
-
-        const paymentDetails = document.getElementById('payment-details');
-        if (paymentDetails) {
-          paymentDetails.style.display = 'block';
-        }
-
-
-      } else {
-        hideLoadingOverlay();
-        // Ocorreu um erro no processamento do pagamento
-        exibirMensagemDeErro('Ocorreu um erro ao processar o pagamento. Por favor, tente novamente mais tarde.');
-      }
+      paymentFormContainer.innerHTML = `
+      <h3>Pagamento com boleto</h3>
+      <p><a href="${data.paymentLink}" target="_blank">${data.paymentLink}</a></p>
+    `;
+      
+     // return makeSlip(userData); // Chamada à função makeSlip para obter o link do boleto
+    })
+    .then(paymentLink => {
+      console.log("fallback");
+      console.log(paymentLink);
+      alert("Link do boleto: " + paymentLink);
     })
     .catch(error => {
       hideLoadingOverlay();
-      console.error('Erro na requisição:', JSON.stringify(error));
+      console.error('Erro na requisição:', error.message);
       exibirMensagemDeErro('Ocorreu um erro na requisição. Por favor, tente novamente mais tarde.');
     });
+
 }
+
+
+
 
 // Função para conceder acesso ao curso após o pagamento bem-sucedido
 function concederAcessoAoCurso() {
